@@ -2,21 +2,198 @@
 <html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Can't believe Its Been A Year Since I Met You Riiiiii 💗</title>	    
-    <link type="text/css" rel="stylesheet" href="./file/default.css">
-    <script type="text/javascript" src="./file/jquery.min.js"></script>
-    <script type="text/javascript" src="./file/jscex.min.js"></script>
-    <script type="text/javascript" src="./file/jscex-parser.js"></script>
-    <script type="text/javascript" src="./file/jscex-jit.js"></script>
-    <script type="text/javascript" src="./file/jscex-builderbase.min.js"></script>
-    <script type="text/javascript" src="./file/jscex-async.min.js"></script>
-    <script type="text/javascript" src="./file/jscex-async-powerpack.min.js"></script>
-    <script type="text/javascript" src="./file/functions.js" charset="utf-8"></script>
-    <script type="text/javascript" src="./file/love.js" charset="utf-8"></script>
+    <title>Can't believe Its Been A Year Since I Met You Riiiiii 💗</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            font-family: sans-serif;
+        }
+        #main {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #error {
+            display: none;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        #wrap {
+            position: relative;
+            margin: 0 auto;
+            width: 1100px;
+            height: 680px;
+        }
+        #text {
+            width: 400px;
+            height: 425px;
+            left: 60px;
+            top: 80px;
+            position: absolute;
+        }
+        #code {
+            display: none;
+            color: #333;
+            font-family: "Courier New";
+            font-size: 12px;
+        }
+        #code .say {
+            display: block;
+            color: #111;
+            font-size: 16px;
+            margin: 8px 0;
+        }
+        #clock-box {
+            position: absolute;
+            left: 60px;
+            top: 550px;
+            font-size: 28px;
+            color: #333;
+        }
+        #clock {
+            margin-left: 48px;
+        }
+        #canvas {
+            margin: 0 auto;
+            width: 1100px;
+            height: 680px;
+            cursor: pointer;
+        }
+        #canvas.hand {
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script>
+        // Minimal Jscex implementation for async/await simulation
+        var Jscex = {
+            compile: function(type, func) {
+                return func;
+            },
+            Async: {
+                sleep: function(ms) {
+                    return new Promise(resolve => setTimeout(resolve, ms));
+                }
+            }
+        };
+
+        // Add typewriter effect
+        jQuery.fn.typewriter = function() {
+            this.each(function() {
+                var $ele = $(this), str = $ele.html(), progress = 0;
+                $ele.html('');
+                $ele.show();
+                var timer = setInterval(function() {
+                    var current = str.substr(progress, 1);
+                    if (current == '<') {
+                        progress = str.indexOf('>', progress) + 1;
+                    } else {
+                        progress++;
+                    }
+                    $ele.html(str.substring(0, progress) + (progress & 1 ? '_' : ''));
+                    if (progress >= str.length) {
+                        clearInterval(timer);
+                        $ele.html(str);
+                    }
+                }, 75);
+            });
+            return this;
+        };
+
+        // Simple Tree class implementation
+        function Tree(canvas, width, height, opts) {
+            this.canvas = canvas;
+            this.ctx = canvas.getContext('2d');
+            this.width = width;
+            this.height = height;
+            this.opts = opts;
+            this.branches = [];
+            this.blooms = [];
+            
+            this.seed = {
+                x: opts.seed.x,
+                y: height - 20,
+                scale: opts.seed.scale,
+                color: opts.seed.color,
+                draw: () => {
+                    this.ctx.save();
+                    this.ctx.fillStyle = this.seed.color;
+                    this.ctx.fillRect(this.seed.x - 10, this.seed.y - 10, 20, 20);
+                    this.ctx.restore();
+                },
+                hover: (x, y) => {
+                    return Math.abs(x - this.seed.x) < 20 && Math.abs(y - this.seed.y) < 20;
+                },
+                canScale: () => this.seed.scale > 0.5,
+                scale: (factor) => this.seed.scale *= factor,
+                canMove: () => this.seed.y > height - 200,
+                move: (dx, dy) => this.seed.y += dy
+            };
+            
+            this.footer = {
+                draw: () => {
+                    this.ctx.fillStyle = '#654321';
+                    this.ctx.fillRect(0, height - 5, width, 5);
+                }
+            };
+            
+            this.growthStep = 0;
+            this.flowerStep = 0;
+        }
+
+        Tree.prototype.grow = function() {
+            this.growthStep++;
+            this.ctx.strokeStyle = '#654321';
+            this.ctx.lineWidth = 8;
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.seed.x, this.seed.y);
+            this.ctx.lineTo(this.seed.x, this.seed.y - this.growthStep * 2);
+            this.ctx.stroke();
+            
+            if (this.growthStep > 50) {
+                // Draw branches
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.seed.x, this.seed.y - 100);
+                this.ctx.lineTo(this.seed.x - 50, this.seed.y - 150);
+                this.ctx.moveTo(this.seed.x, this.seed.y - 100);
+                this.ctx.lineTo(this.seed.x + 50, this.seed.y - 150);
+                this.ctx.stroke();
+            }
+        };
+
+        Tree.prototype.canGrow = function() {
+            return this.growthStep < 100;
+        };
+
+        Tree.prototype.flower = function(num) {
+            this.flowerStep++;
+            if (this.flowerStep > 20) {
+                for (let i = 0; i < num; i++) {
+                    this.ctx.fillStyle = '#ff69b4';
+                    this.ctx.beginPath();
+                    let x = this.seed.x + (Math.random() - 0.5) * 200;
+                    let y = this.seed.y - 50 - Math.random() * 100;
+                    this.ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+        };
+
+        Tree.prototype.canFlower = function() {
+            return this.flowerStep < 50;
+        };
+
+        Tree.prototype.snapshot = function() {};
+        Tree.prototype.move = function() { return false; };
+        Tree.prototype.toDataURL = function() { return this.canvas.toDataURL(); };
+
         function playAudio() {
-            var audio = document.getElementById("myAudio");
-            audio.play();
+            // Audio functionality would go here
+            console.log('Audio would play here');
         }
     </script>
 </head>
@@ -36,8 +213,8 @@
                 </div>
             </div>
             <div id="clock-box">
-                <span id="clock">365 days 0 hours 0 minutes 0 seconds</span> <!-- Change to "6940 days..." if needed -->
-		    <span class="say">And Counting....</span><br>
+                <span id="clock">365 days 0 hours 0 minutes 0 seconds</span>
+		        <span class="say">And Counting....</span><br>
             </div>
             <canvas id="canvas" width="1100" height="680"></canvas>
         </div>
@@ -116,64 +293,64 @@
             canvas.toggleClass('hand', seed.hover(x, y));
         });
 
-        var seedAnimate = eval(Jscex.compile("async", function () {
+        var seedAnimate = async function () {
             seed.draw();
             while (hold) {
-                $await(Jscex.Async.sleep(10));
+                await Jscex.Async.sleep(10);
             }
             while (seed.canScale()) {
                 seed.scale(0.95);
-                $await(Jscex.Async.sleep(10));
+                await Jscex.Async.sleep(10);
             }
             while (seed.canMove()) {
                 seed.move(0, 2);
                 foot.draw();
-                $await(Jscex.Async.sleep(10));
+                await Jscex.Async.sleep(10);
             }
-        }));
+        };
 
-        var growAnimate = eval(Jscex.compile("async", function () {
+        var growAnimate = async function () {
             do {
                 tree.grow();
-                $await(Jscex.Async.sleep(10));
+                await Jscex.Async.sleep(10);
             } while (tree.canGrow());
-        }));
+        };
 
-        var flowAnimate = eval(Jscex.compile("async", function () {
+        var flowAnimate = async function () {
             do {
                 tree.flower(2);
-                $await(Jscex.Async.sleep(10));
+                await Jscex.Async.sleep(10);
             } while (tree.canFlower());
-        }));
+        };
 
-        var moveAnimate = eval(Jscex.compile("async", function () {
+        var moveAnimate = async function () {
             tree.snapshot("p1", 240, 0, 610, 680);
             while (tree.move("p1", 500, 0)) {
                 foot.draw();
-                $await(Jscex.Async.sleep(10));
+                await Jscex.Async.sleep(10);
             }
             foot.draw();
             tree.snapshot("p2", 500, 0, 610, 680);
 
             canvas.parent().css("background", "url(" + tree.toDataURL('image/png') + ")");
             canvas.css("background", "#ffe");
-            $await(Jscex.Async.sleep(300));
+            await Jscex.Async.sleep(300);
             canvas.css("background", "none");
-        }));
+        };
 
-        var textAnimate = eval(Jscex.compile("async", function () {
+        var textAnimate = async function () {
             $("#code").show().typewriter();
-        }));
+        };
 	    
-        var runAsync = eval(Jscex.compile("async", function () {
-            $await(seedAnimate());
-            $await(growAnimate());
-            $await(flowAnimate());
-            $await(moveAnimate());
-            textAnimate().start();
-        }));
+        var runAsync = async function () {
+            await seedAnimate();
+            await growAnimate();
+            await flowAnimate();
+            await moveAnimate();
+            textAnimate();
+        };
 
-        runAsync().start();
+        runAsync();
     })();
     </script>
 </body>
